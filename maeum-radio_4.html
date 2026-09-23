@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>마음 라디오</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fff7ec; --ink:#3a2e2a; --soft:#7a6a62;
+    --pink:#ff7fa3; --yellow:#ffd44d; --mint:#5fd3b5; --sky:#6ab8ff; --purple:#a88bff; --orange:#ff9f5a;
+    --card:#ffffff; --shadow:0 8px 0 rgba(58,46,42,.12);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:'Jua','Gowun Dodum',sans-serif;background:var(--bg);color:var(--ink);overflow:hidden}
+  .page{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;padding:20px 40px 96px;overflow:auto}
+  .page.active{display:flex;animation:fadeIn .5s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+
+  /* ---------- 공통 내비게이션 ---------- */
+  nav{position:fixed;left:0;right:0;bottom:0;height:88px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;z-index:50;pointer-events:none}
+  nav button{pointer-events:auto}
+  .navbtn{font-family:inherit;font-size:26px;border:none;border-radius:999px;padding:14px 30px;cursor:pointer;background:var(--ink);color:#fff;box-shadow:var(--shadow);transition:transform .15s}
+  .navbtn:hover{transform:translateY(-3px)}
+  .navbtn[disabled]{visibility:hidden}
+  .dots{display:flex;gap:12px;pointer-events:auto}
+  .dot{width:18px;height:18px;border-radius:50%;background:#d9cbbf;cursor:pointer;border:none}
+  .dot.on{background:var(--pink);transform:scale(1.25)}
+  body.studio nav .dot{background:#555}
+  body.studio nav .dot.on{background:#ff3b5c}
+
+  /* ---------- 1쪽: 환영 ---------- */
+  .onair-sign{display:inline-flex;align-items:center;gap:12px;background:#ff3b5c;color:#fff;font-size:30px;padding:10px 26px;border-radius:14px;box-shadow:0 0 0 6px #ffd1db, 0 0 30px #ff3b5c88;animation:blink 1.6s infinite}
+  .onair-sign .led{width:16px;height:16px;border-radius:50%;background:#fff}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.55}}
+  .title{font-size:clamp(44px,6vw,80px);margin:10px 0 2px;letter-spacing:2px;text-align:center}
+  .title .fm{color:var(--pink)}
+  .subtitle{font-size:clamp(22px,2.6vw,34px);color:var(--soft);text-align:center}
+  .welcome-row{display:flex;align-items:center;gap:30px;margin-top:14px;flex-wrap:wrap;justify-content:center}
+  .radio-art{width:170px;flex-shrink:0}
+  .bubble{background:var(--card);border-radius:30px;padding:22px 30px;font-size:clamp(20px,2.1vw,28px);line-height:1.5;box-shadow:var(--shadow);max-width:680px;position:relative;font-family:'Gowun Dodum',sans-serif;font-weight:700}
+  .bubble b{font-family:'Jua';color:var(--pink);font-weight:400}
+  .worries{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:18px;margin-top:20px;width:100%;max-width:1150px}
+  .worry{border-radius:26px;padding:14px 10px;text-align:center;box-shadow:var(--shadow);cursor:pointer;transition:transform .2s;user-select:none}
+  .worry:hover{transform:translateY(-6px) rotate(-1.5deg)}
+  .worry .ico{font-size:46px;display:block}
+  .worry .name{font-size:30px;margin-top:6px}
+  .worry .ex{font-family:'Gowun Dodum';font-weight:700;font-size:17px;margin-top:8px;opacity:.85;line-height:1.4}
+  .w1{background:#ffe38a}.w2{background:#b6f0de}.w3{background:#ffc8d6}.w4{background:#cfe6ff}.w5{background:#e2d8ff}
+  .promise{margin-top:18px;font-size:clamp(24px,2.5vw,32px);background:var(--ink);color:#fff;padding:14px 32px;border-radius:999px;text-align:center}
+  .promise span{color:var(--yellow)}
+  .note{position:absolute;font-size:40px;animation:float 4s ease-in-out infinite;opacity:.7;pointer-events:none}
+  @keyframes float{0%,100%{transform:translateY(0) rotate(-8deg)}50%{transform:translateY(-18px) rotate(8deg)}}
+
+  /* ---------- 2쪽: 조언 방법 ---------- */
+  .p2-head{font-size:clamp(40px,5vw,66px);text-align:center}
+  .p2-sub{font-size:clamp(20px,2.3vw,30px);color:var(--soft);margin-top:4px;text-align:center}
+  .tips{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:30px;width:100%;max-width:1250px}
+  .tip{background:var(--card);border-radius:32px;padding:26px 24px 28px;box-shadow:var(--shadow);position:relative;border-top:14px solid var(--c);display:flex;flex-direction:column;align-items:center;text-align:center;opacity:0;transform:translateY(30px) scale(.95);transition:all .5s cubic-bezier(.2,1.4,.4,1)}
+  .tip.show{opacity:1;transform:none}
+  .tip .num{position:absolute;top:-34px;left:50%;transform:translateX(-50%);width:62px;height:62px;border-radius:50%;background:var(--c);color:#fff;font-size:36px;display:flex;align-items:center;justify-content:center;box-shadow:0 5px 0 rgba(0,0,0,.12)}
+  .tip .big{font-size:68px;margin-top:10px}
+  .tip h3{font-size:clamp(28px,3vw,40px);margin:6px 0 4px;font-weight:400}
+  .tip .how{font-family:'Gowun Dodum';font-weight:700;font-size:clamp(17px,1.7vw,22px);color:var(--soft);line-height:1.5}
+  .tip .say{margin-top:16px;background:color-mix(in srgb,var(--c) 18%,white);border-radius:20px;padding:14px 16px;font-size:clamp(20px,2vw,27px);line-height:1.5;width:100%}
+  .tip .say small{display:block;font-size:16px;color:var(--soft);margin-bottom:4px}
+  .t1{--c:var(--pink)}.t2{--c:var(--orange)}.t3{--c:var(--mint)}
+  .reveal-btn{margin-top:26px;font-family:inherit;font-size:26px;border:none;border-radius:999px;padding:12px 30px;background:var(--yellow);cursor:pointer;box-shadow:var(--shadow)}
+  .no-list{margin-top:22px;font-size:clamp(19px,2vw,25px);background:#fff;border:3px dashed #e9b8c6;border-radius:22px;padding:12px 26px;text-align:center}
+  .no-list b{color:#e2476f;font-weight:400}
+
+  /* ---------- 3쪽: 방송 스튜디오 ---------- */
+  #p3{background:radial-gradient(ellipse at top,#2b2150 0%,#140f27 60%,#0b0817 100%);background-size:cover;background-position:center;color:#fff;padding:18px 24px 100px}
+  .studio-top{width:100%;display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .station{display:flex;align-items:center;gap:14px;font-size:clamp(26px,3vw,40px)}
+  .station .freq{font-size:.55em;background:#ffffff1a;padding:4px 12px;border-radius:10px;color:#ffd44d}
+  .onair{display:flex;align-items:center;gap:12px;font-size:clamp(26px,3vw,42px);padding:8px 26px;border-radius:14px;border:4px solid #5a4a6a;color:#5a4a6a;transition:all .3s}
+  .onair .led{width:18px;height:18px;border-radius:50%;background:#5a4a6a}
+  .onair.live{border-color:#ff3b5c;color:#fff;background:#ff3b5c;box-shadow:0 0 36px #ff3b5caa;animation:blink 1.4s infinite}
+  .onair.live .led{background:#fff}
+  .clock{font-size:clamp(22px,2.4vw,32px);font-variant-numeric:tabular-nums;background:#ffffff14;padding:6px 16px;border-radius:12px}
+  .stage{flex:1;width:100%;display:flex;gap:20px;margin-top:14px;min-height:0}
+  .screen-wrap{flex:1;position:relative;border-radius:28px;overflow:hidden;background:#000;box-shadow:0 0 0 6px #3a2d66,0 0 0 10px #ff7fa3,0 0 50px #ff7fa366;min-height:360px}
+  .screen-wrap.live{box-shadow:0 0 0 6px #3a2d66,0 0 0 10px #ffd44d,0 0 40px #ffd44d66}
+  #vcanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:none;background:#000}
+  .onair,.onair-sign{will-change:opacity}
+  .stat{font-family:'Gowun Dodum';font-weight:700;font-size:14px;color:#ffd44d;background:#0006;border-radius:8px;padding:6px 8px;text-align:center}
+  .btn.on{background:#5fd3b5;color:#1a1433}
+  video{width:100%;height:100%;object-fit:contain;background:#000;display:block}
+  video.mirror{transform:scaleX(-1)}
+  video.rot{transform:rotate(180deg)}
+  video.mirror.rot{transform:rotate(180deg) scaleX(-1)}
+  .placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font-size:30px;color:#cbbfff;text-align:center;padding:20px}
+  .placeholder .mic{font-size:90px}
+  .corner{position:absolute;top:18px;left:18px;display:flex;gap:10px;align-items:center}
+  .tag{background:#000a;padding:6px 14px;border-radius:10px;font-size:22px}
+  .tag.red{background:#ff3b5c}
+  .rec-dot{width:12px;height:12px;border-radius:50%;background:#fff;display:inline-block;margin-right:6px;animation:blink 1s infinite}
+  .eq{position:absolute;top:18px;right:18px;display:flex;gap:4px;align-items:flex-end;height:46px;background:#000a;padding:6px 10px;border-radius:10px}
+  .eq i{width:8px;background:linear-gradient(#ff3b5c,#ffd44d,#5fd3b5);border-radius:3px;height:10%;transition:height .08s}
+  .lower{position:absolute;left:0;right:0;bottom:0;padding:0 18px 16px}
+  .lower-card{display:flex;align-items:stretch;border-radius:18px;overflow:hidden;box-shadow:0 6px 20px #0008;max-width:900px}
+  .lower-card .who{background:linear-gradient(135deg,#ff7fa3,#ff9f5a);padding:10px 22px;font-size:clamp(24px,2.6vw,36px);display:flex;align-items:center;gap:10px;white-space:nowrap}
+  .lower-card .what{background:#ffffffee;color:#3a2e2a;padding:10px 22px;font-size:clamp(20px,2.2vw,30px);display:flex;align-items:center;flex:1}
+  .lower-card .what small{color:#a88bff;margin-right:10px}
+  .ticker{margin-top:10px;background:#ffd44d;color:#3a2e2a;border-radius:10px;overflow:hidden;white-space:nowrap;font-size:22px;padding:6px 0}
+  .ticker span{display:inline-block;padding-left:100%;animation:tick 22s linear infinite;will-change:transform}
+  @keyframes tick{to{transform:translateX(-100%)}}
+  .fx{position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center;font-size:120px}
+  .fx .pop{animation:pop 1.6s ease forwards}
+  @keyframes pop{0%{transform:scale(.2);opacity:0}25%{transform:scale(1.2);opacity:1}80%{opacity:1}100%{transform:scale(1) translateY(-60px);opacity:0}}
+
+  .panel{width:300px;flex-shrink:0;background:#ffffff10;border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:12px;overflow:auto;transition:all .3s}
+  .panel.hide{width:0;padding:0;opacity:0;overflow:hidden}
+  .panel h4{font-size:20px;color:#ffd44d;font-weight:400}
+  .panel label{font-size:17px;color:#cbbfff;display:block;margin-bottom:4px}
+  .panel input,.panel select{width:100%;font-family:'Gowun Dodum';font-weight:700;font-size:17px;padding:9px 10px;border-radius:10px;border:none;background:#fff;color:#3a2e2a}
+  .btn{font-family:'Jua';font-size:20px;border:none;border-radius:12px;padding:10px 12px;cursor:pointer;background:#ffffff22;color:#fff;transition:transform .1s}
+  .btn:hover{transform:translateY(-2px)}
+  .btn.go{background:#ff3b5c;font-size:24px;padding:14px}
+  .btn.go.stop{background:#555}
+  .row{display:flex;gap:8px}.row .btn{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{font-family:'Jua';font-size:17px;border:none;border-radius:999px;padding:6px 12px;cursor:pointer;background:#ffffff22;color:#fff}
+  .chip.on{background:#ffd44d;color:#3a2e2a}
+  .hint{font-family:'Gowun Dodum';font-size:13px;color:#9d90c9;line-height:1.5}
+  .toggle-panel{position:fixed;right:24px;top:84px;z-index:40}
+
+  @media (max-width:900px){
+    .worries{grid-template-columns:repeat(2,1fr)}
+    .tips{grid-template-columns:1fr;gap:44px}
+    .page{padding:20px 16px 110px}
+    .stage{flex-direction:column}
+    .panel{width:100%}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== 1쪽: 모든 고민 환영 ===================== -->
+<section class="page active" id="p1">
+  <span class="note" style="left:6%;top:14%">🎵</span>
+  <span class="note" style="right:7%;top:22%;animation-delay:1s">🎶</span>
+  <span class="note" style="left:10%;bottom:22%;animation-delay:2s">⭐</span>
+  <span class="note" style="right:10%;bottom:26%;animation-delay:1.5s">💌</span>
+
+  <div class="onair-sign"><span class="led"></span>ON AIR</div>
+  <h1 class="title">2학년 6반 <span class="fm">마음 라디오</span></h1>
+  <p class="subtitle">FM 2.6 MHz · 여러분의 이야기를 기다리는 방송국</p>
+
+  <div class="welcome-row">
+    <svg class="radio-art" viewBox="0 0 240 200" aria-hidden="true">
+      <line x1="170" y1="40" x2="205" y2="4" stroke="#3a2e2a" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="205" cy="6" r="7" fill="#ff7fa3"/>
+      <rect x="10" y="40" width="220" height="150" rx="34" fill="#ff9f5a"/>
+      <rect x="22" y="52" width="196" height="126" rx="26" fill="#ffd44d"/>
+      <circle cx="80" cy="118" r="44" fill="#3a2e2a"/>
+      <circle cx="80" cy="118" r="30" fill="#5a4a42"/>
+      <circle cx="80" cy="118" r="10" fill="#3a2e2a"/>
+      <rect x="140" y="80" width="62" height="28" rx="8" fill="#fff"/>
+      <line x1="160" y1="84" x2="160" y2="104" stroke="#ff3b5c" stroke-width="4"/>
+      <circle cx="155" cy="140" r="12" fill="#5fd3b5"/>
+      <circle cx="188" cy="140" r="12" fill="#ff7fa3"/>
+      <circle cx="66" cy="102" r="5" fill="#fff" opacity=".6"/>
+    </svg>
+    <div class="bubble">
+      안녕, 친구들! 😊<br>
+      마음 라디오는 <b>어떤 고민이든</b> 다 환영해요.<br>
+      작은 고민도, 큰 고민도, 말하기 쑥스러운 고민도<br>
+      모두 소중한 <b>사연</b>이 된답니다.
+    </div>
+  </div>
+
+  <div class="worries">
+    <div class="worry w1"><span class="ico">📚</span><div class="name">공부 고민</div><div class="ex">받아쓰기가 어려워요<br>수학이 헷갈려요</div></div>
+    <div class="worry w2"><span class="ico">🤝</span><div class="name">친구 고민</div><div class="ex">친구랑 다퉜어요<br>놀자고 말하기 어려워요</div></div>
+    <div class="worry w3"><span class="ico">🏠</span><div class="name">가족 고민</div><div class="ex">동생이랑 자꾸 싸워요<br>엄마한테 혼났어요</div></div>
+    <div class="worry w4"><span class="ico">💭</span><div class="name">나의 고민</div><div class="ex">발표할 때 떨려요<br>잘하는 게 뭘까요?</div></div>
+    <div class="worry w5"><span class="ico">🌈</span><div class="name">무엇이든</div><div class="ex">어떤 이야기든<br>다 들어줄게요!</div></div>
+  </div>
+
+  <div class="promise">📻 마음 라디오의 약속 — <span>놀리지 않기 · 끝까지 들어 주기 · 비밀 지켜 주기</span></div>
+</section>
+
+<!-- ===================== 2쪽: 조언하는 방법 3가지 ===================== -->
+<section class="page" id="p2">
+  <h2 class="p2-head">🎧 DJ처럼 조언하는 방법 3가지</h2>
+  <p class="p2-sub">친구의 사연을 듣고 이렇게 말해 주면 마음이 따뜻해져요</p>
+
+  <div class="tips">
+    <div class="tip t1">
+      <div class="num">1</div>
+      <div class="big">👂💗</div>
+      <h3>마음 알아주기</h3>
+      <p class="how">친구의 마음을 먼저<br>알아주고 공감해요</p>
+      <div class="say"><small>이렇게 말해요</small>“그랬구나.<br>정말 속상했겠다.”</div>
+    </div>
+    <div class="tip t2">
+      <div class="num">2</div>
+      <div class="big">💡🙋</div>
+      <h3>방법 알려 주기</h3>
+      <p class="how">내 경험이나 해 볼 수 있는<br>좋은 방법을 알려 줘요</p>
+      <div class="say"><small>이렇게 말해요</small>“나도 그런 적 있어.<br>이렇게 해 보면 어때?”</div>
+    </div>
+    <div class="tip t3">
+      <div class="num">3</div>
+      <div class="big">💪🌟</div>
+      <h3>힘내라 응원하기</h3>
+      <p class="how">친구가 용기를 낼 수 있게<br>따뜻하게 응원해요</p>
+      <div class="say"><small>이렇게 말해요</small>“너는 할 수 있어!<br>내가 응원할게!”</div>
+    </div>
+  </div>
+
+  <button class="reveal-btn" id="revealBtn">▶ 하나씩 보기</button>
+  <p class="no-list">🚫 이런 말은 <b>안 돼요</b>: “그것도 못 해?” · “별거 아니잖아” · 다른 친구에게 사연 퍼뜨리기</p>
+</section>
+
+<!-- ===================== 3쪽: 보이는 라디오 스튜디오 ===================== -->
+<section class="page" id="p3">
+  <div class="studio-top">
+    <div class="station">📻 마음 라디오 <span class="freq">FM 2.6</span></div>
+    <div class="onair" id="onair"><span class="led"></span>ON AIR</div>
+    <div class="clock" id="clock">00:00</div>
+  </div>
+
+  <div class="stage">
+    <div class="screen-wrap" id="screenWrap">
+      <video id="video" autoplay playsinline muted></video>
+      <canvas id="vcanvas" width="1280" height="720"></canvas>
+      <div class="placeholder" id="placeholder">
+        <div class="mic">🎙️</div>
+        <div>오른쪽의 <b style="color:#ffd44d">[📷 카메라 켜기]</b>를 누르면<br>실물 화상기 화면이 나와요</div>
+      </div>
+      <div class="corner" id="corner" style="display:none">
+        <span class="tag red"><span class="rec-dot"></span>LIVE</span>
+        <span class="tag" id="timer">00:00</span>
+      </div>
+      <div class="eq" id="eq" style="display:none"></div>
+      <div class="lower">
+        <div class="lower-card">
+          <div class="who">🎙️ <span id="djShow">DJ 친구</span></div>
+          <div class="what"><small id="catShow">친구 고민</small><span id="storyShow">오늘의 사연을 들려주세요!</span></div>
+        </div>
+        <div class="ticker"><span>💌 마음 라디오는 어떤 고민이든 환영해요! &nbsp;&nbsp; 👂 마음 알아주기 → 💡 방법 알려 주기 → 💪 힘내라 응원하기 &nbsp;&nbsp; 🎵 오늘도 들어 주셔서 고마워요! &nbsp;&nbsp;</span></div>
+      </div>
+      <div class="fx" id="fx"></div>
+    </div>
+
+    <aside class="panel" id="panel">
+      <h4>🎚️ 방송 조정실</h4>
+      <div>
+        <label>카메라 선택 (실물 화상기)</label>
+        <select id="camSel"><option value="">기본 카메라</option></select>
+      </div>
+      <div>
+        <label>화질 (끊기면 낮춰 보세요)</label>
+        <select id="resSel">
+          <option value="640x480">부드럽게 (480p)</option>
+          <option value="1280x720" selected>보통 (720p) · 추천</option>
+          <option value="1920x1080">선명하게 (1080p)</option>
+        </select>
+      </div>
+      <button class="btn" id="camBtn">📷 카메라 켜기</button>
+      <div class="stat" id="stat">📊 카메라 꺼짐</div>
+      <div class="row">
+        <button class="btn" id="mirrorBtn">↔ 좌우</button>
+        <button class="btn" id="rotBtn">↻ 180°</button>
+      </div>
+      <button class="btn" id="vBtn">🏙️ 가상 스튜디오 켜기</button>
+      <button class="btn on" id="deskBtn">🎙️ 책상·마이크 보이기</button>
+      <div>
+        <label>DJ 이름</label>
+        <input id="djIn" placeholder="예) DJ 민준" maxlength="12">
+      </div>
+      <div>
+        <label>고민 종류</label>
+        <div class="chips" id="chips">
+          <button class="chip" data-v="공부 고민">📚 공부</button>
+          <button class="chip on" data-v="친구 고민">🤝 친구</button>
+          <button class="chip" data-v="가족 고민">🏠 가족</button>
+          <button class="chip" data-v="나의 고민">💭 나</button>
+          <button class="chip" data-v="무엇이든">🌈 무엇이든</button>
+        </div>
+      </div>
+      <div>
+        <label>오늘의 사연 제목</label>
+        <input id="storyIn" placeholder="예) 친구랑 화해하고 싶어요" maxlength="30">
+      </div>
+      <button class="btn go" id="goBtn">🔴 방송 시작</button>
+      <div class="row">
+        <button class="btn" id="jingleBtn">🎵 징글</button>
+        <button class="btn" id="clapBtn">👏 박수</button>
+      </div>
+      <div class="row">
+        <button class="btn" id="heartBtn">💗 공감</button>
+        <button class="btn" id="starBtn">🌟 응원</button>
+      </div>
+      <button class="btn" id="micBtn">🎤 소리 막대 켜기</button>
+      <button class="btn" id="fsBtn">⛶ 전체 화면</button>
+      <p class="hint">단축키 · 스페이스: 방송 시작/끝 · C: 박수 · J: 징글 · H: 조정실 숨기기 · ←/→: 쪽 이동<br>가상 스튜디오는 인터넷이 필요해요. 끊기면 화질을 480p로 낮춰 주세요.</p>
+    </aside>
+  </div>
+</section>
+
+<nav>
+  <button class="navbtn" id="prevBtn">◀ 이전</button>
+  <div class="dots" id="dots"></div>
+  <button class="navbtn" id="nextBtn">다음 ▶</button>
+</nav>
+
+<script>
+/* ---------- 쪽 이동 ---------- */
+const pages=[...document.querySelectorAll('.page')];
+let cur=0;
+const dots=document.getElementById('dots');
+pages.forEach((_,i)=>{const d=document.createElement('button');d.className='dot';d.onclick=()=>go(i);dots.appendChild(d)});
+function go(i){
+  cur=Math.max(0,Math.min(pages.length-1,i));
+  pages.forEach((p,k)=>p.classList.toggle('active',k===cur));
+  [...dots.children].forEach((d,k)=>d.classList.toggle('on',k===cur));
+  document.getElementById('prevBtn').disabled=cur===0;
+  document.getElementById('nextBtn').disabled=cur===pages.length-1;
+  document.body.classList.toggle('studio',cur===2);
+  if(cur===1) resetTips();
+}
+document.getElementById('prevBtn').onclick=()=>go(cur-1);
+document.getElementById('nextBtn').onclick=()=>go(cur+1);
+go(0);
+
+/* ---------- 2쪽: 하나씩 보여주기 ---------- */
+const tips=[...document.querySelectorAll('.tip')];
+let shown=0;
+const revealBtn=document.getElementById('revealBtn');
+function resetTips(){shown=0;tips.forEach(t=>t.classList.remove('show'));revealBtn.textContent='▶ 하나씩 보기';revealBtn.style.display=''}
+revealBtn.onclick=()=>{
+  if(shown<tips.length){tips[shown++].classList.add('show');ding(520+shown*120)}
+  if(shown<tips.length) revealBtn.textContent=`▶ ${shown+1}번째 보기`; else revealBtn.style.display='none';
+};
+
+/* ---------- 효과음 (Web Audio로 직접 만듦) ---------- */
+let ac;
+function ctx(){ac=ac||new (window.AudioContext||window.webkitAudioContext)();return ac}
+function tone(f,t0,d,type='sine',v=.25){const a=ctx(),o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(0,a.currentTime+t0);g.gain.linearRampToValueAtTime(v,a.currentTime+t0+.02);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+t0+d);o.connect(g).connect(a.destination);o.start(a.currentTime+t0);o.stop(a.currentTime+t0+d+.05)}
+function ding(f=660){tone(f,0,.5,'triangle',.3);tone(f*2,0,.4,'sine',.1)}
+function jingle(){[523,659,784,1047,784,1047].forEach((f,i)=>tone(f,i*.14,.35,'triangle',.28));tone(1319,.9,.8,'sine',.2)}
+function clap(){const a=ctx();for(let n=0;n<26;n++){const t=a.currentTime+n*0.07+Math.random()*.05;const b=a.createBuffer(1,a.sampleRate*.06,a.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,3);const s=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain();f.type='bandpass';f.frequency.value=1200+Math.random()*800;g.gain.value=.5;s.buffer=b;s.connect(f).connect(g).connect(a.destination);s.start(t)}}
+function pop(emoji){const fx=document.getElementById('fx');const s=document.createElement('div');s.className='pop';s.textContent=emoji;fx.appendChild(s);setTimeout(()=>s.remove(),1700)}
+
+document.querySelectorAll('.worry').forEach(w=>w.onclick=()=>ding(600+Math.random()*300));
+
+/* ---------- 3쪽: 카메라 ---------- */
+const video=document.getElementById('video'),camSel=document.getElementById('camSel'),camBtn=document.getElementById('camBtn');
+let stream=null;
+async function listCams(){
+  try{
+    const devs=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');
+    const keep=camSel.value;
+    camSel.innerHTML='';
+    devs.forEach((d,i)=>{const o=document.createElement('option');o.value=d.deviceId;o.textContent=d.label||`카메라 ${i+1}`;camSel.appendChild(o)});
+    if(keep) camSel.value=keep;
+  }catch(e){}
+}
+async function startCam(){
+  if(!navigator.mediaDevices?.getUserMedia){alert('이 브라우저에서는 카메라를 쓸 수 없어요. 크롬(Chrome)으로 열어 주세요.');return}
+  stopCam();
+  try{
+    const id=camSel.value;
+    const [rw,rh]=document.getElementById('resSel').value.split('x').map(Number);
+    const vc={width:{ideal:rw},height:{ideal:rh},frameRate:{ideal:30}};if(id)vc.deviceId={exact:id};
+    stream=await navigator.mediaDevices.getUserMedia({video:vc,audio:false});
+    video.srcObject=stream;startStat();
+    document.getElementById('placeholder').style.display='none';
+    camBtn.textContent='⏹ 카메라 끄기';
+    await listCams();
+    const tr=stream.getVideoTracks()[0];if(tr?.getSettings().deviceId) camSel.value=tr.getSettings().deviceId;
+  }catch(e){alert('카메라를 켤 수 없어요.\n① 주소창 옆 카메라 권한을 "허용"으로 바꾸고\n② 실물 화상기 USB 연결을 확인해 주세요.\n('+e.name+')')}
+}
+function stopCam(){if(virtual)setVirtual(false);document.getElementById('stat').textContent='📊 카메라 꺼짐';if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}video.srcObject=null;document.getElementById('placeholder').style.display='';camBtn.textContent='📷 카메라 켜기'}
+camBtn.onclick=()=>stream?stopCam():startCam();
+camSel.onchange=()=>{if(stream)startCam()};
+document.getElementById('resSel').onchange=()=>{if(stream)startCam()};
+navigator.mediaDevices?.addEventListener?.('devicechange',listCams);
+listCams();
+let mirror=false,rot=false;
+document.getElementById('mirrorBtn').onclick=()=>{mirror=!mirror;video.classList.toggle('mirror',mirror)};
+document.getElementById('rotBtn').onclick=()=>{rot=!rot;video.classList.toggle('rot',rot)};
+
+/* ---------- 자막 ---------- */
+const djIn=document.getElementById('djIn'),storyIn=document.getElementById('storyIn');
+djIn.oninput=()=>document.getElementById('djShow').textContent=djIn.value.trim()||'DJ 친구';
+storyIn.oninput=()=>document.getElementById('storyShow').textContent=storyIn.value.trim()||'오늘의 사연을 들려주세요!';
+document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');document.getElementById('catShow').textContent=c.dataset.v});
+
+/* ---------- 방송 시작/끝 ---------- */
+let live=false,t0=0,tick;
+const goBtn=document.getElementById('goBtn');
+function fmt(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+function toggleLive(){
+  live=!live;
+  document.getElementById('onair').classList.toggle('live',live);
+  document.getElementById('screenWrap').classList.toggle('live',live);
+  document.getElementById('corner').style.display=live?'flex':'none';
+  goBtn.textContent=live?'⏹ 방송 끝':'🔴 방송 시작';goBtn.classList.toggle('stop',live);
+  if(live){jingle();t0=Date.now();tick=setInterval(()=>document.getElementById('timer').textContent=fmt(Math.floor((Date.now()-t0)/1000)),500)}
+  else{clearInterval(tick);clap();pop('👏');document.getElementById('timer').textContent='00:00'}
+}
+goBtn.onclick=toggleLive;
+document.getElementById('jingleBtn').onclick=jingle;
+document.getElementById('clapBtn').onclick=()=>{clap();pop('👏')};
+document.getElementById('heartBtn').onclick=()=>{ding(700);pop('💗')};
+document.getElementById('starBtn').onclick=()=>{ding(880);pop('🌟')};
+setInterval(()=>{const d=new Date();document.getElementById('clock').textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')},1000);
+
+/* ---------- 소리 막대 (마이크) ---------- */
+const eq=document.getElementById('eq');for(let i=0;i<10;i++)eq.appendChild(document.createElement('i'));
+let micStream=null,raf;
+document.getElementById('micBtn').onclick=async function(){
+  if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null;cancelAnimationFrame(raf);eq.style.display='none';this.textContent='🎤 소리 막대 켜기';return}
+  try{
+    micStream=await navigator.mediaDevices.getUserMedia({audio:true});
+    const a=ctx(),an=a.createAnalyser();an.fftSize=64;a.createMediaStreamSource(micStream).connect(an);
+    const buf=new Uint8Array(an.frequencyBinCount),bars=[...eq.children];eq.style.display='flex';this.textContent='🎤 소리 막대 끄기';
+    (function loop(){an.getByteFrequencyData(buf);bars.forEach((b,i)=>b.style.height=Math.max(8,buf[i+1]/255*100)+'%');raf=requestAnimationFrame(loop)})();
+  }catch(e){alert('마이크를 켤 수 없어요. 마이크 권한을 허용해 주세요.')}
+};
+
+/* ---------- 전체 화면 / 단축키 ---------- */
+document.getElementById('fsBtn').onclick=()=>document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();
+const panel=document.getElementById('panel');
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;
+  if(e.key==='ArrowRight')go(cur+1);
+  else if(e.key==='ArrowLeft')go(cur-1);
+  else if(cur===1&&(e.key==='Enter'))revealBtn.click();
+  else if(cur===2){
+    const k=e.key.toLowerCase();
+    if(e.code==='Space'){e.preventDefault();toggleLive()}
+    else if(k==='c'){clap();pop('👏')}
+    else if(k==='j')jingle();
+    else if(k==='h')panel.classList.toggle('hide');
+  }
+});
+/* ---------- 화면 속도 측정 (끊김 확인용) ---------- */
+let camGen=0;
+function startStat(){
+  const g=++camGen,stat=document.getElementById('stat');let n=0,t=performance.now();
+  if(!video.requestVideoFrameCallback)return;
+  const cb=()=>{if(g!==camGen||!stream)return;n++;const now=performance.now();
+    if(now-t>=1000){const fps=Math.round(n*1000/(now-t));stat.textContent=`📊 ${fps}fps · ${video.videoWidth}×${video.videoHeight}`+(fps<15?' · 화질을 낮춰 보세요':'');n=0;t=now}
+    video.requestVideoFrameCallback(cb)};
+  video.requestVideoFrameCallback(cb);
+}
+
+/* ---------- 가상 스튜디오 그림 ---------- */
+const OW=1280,OH=720;
+function mk(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c}
+function rr(c,x,y,w,h,r){c.beginPath();c.roundRect(x,y,w,h,r)}
+const COLS=['#ff7fa3','#ffd44d','#5fd3b5','#6ab8ff','#a88bff'];
+function drawStudio(W,H,live){
+  const cv=mk(W,H),c=cv.getContext('2d');c.scale(W/1600,H/900);
+  let g=c.createLinearGradient(0,0,0,900);g.addColorStop(0,'#2e2356');g.addColorStop(1,'#130e28');c.fillStyle=g;c.fillRect(0,0,1600,900);
+  const foam=(x0,y0,cols,rows)=>{for(let r=0;r<rows;r++)for(let k=0;k<cols;k++){const x=x0+k*62,y=y0+r*62;c.fillStyle=(r+k)%2?'#3b2e6e':'#32275e';rr(c,x,y,56,56,8);c.fill();c.fillStyle='rgba(255,255,255,.06)';rr(c,x+6,y+6,44,16,6);c.fill()}};
+  foam(40,150,5,7);foam(1250,150,5,4);
+  // 선반 · LP · 책
+  c.fillStyle='#6b4a35';c.fillRect(30,640,340,16);
+  for(let i=0;i<4;i++){const x=76+i*62;c.fillStyle='#111';c.beginPath();c.arc(x,604,34,0,7);c.fill();c.strokeStyle='#333';c.lineWidth=2;c.beginPath();c.arc(x,604,24,0,7);c.stroke();c.fillStyle=COLS[i];c.beginPath();c.arc(x,604,11,0,7);c.fill()}
+  [70,56,80,64].forEach((h,i)=>{c.fillStyle=COLS[(i+2)%5];c.fillRect(300+i*16,640-h,13,h)});
+  // 창문 (밤하늘)
+  g=c.createLinearGradient(0,420,0,640);g.addColorStop(0,'#0d1b3d');g.addColorStop(1,'#2d4a8a');c.fillStyle=g;c.fillRect(1255,420,295,220);
+  c.fillStyle='#fff3c4';c.beginPath();c.arc(1495,470,22,0,7);c.fill();
+  c.fillStyle='#fff';[[1290,450],[1340,490],[1400,440],[1440,510],[1310,530],[1530,540]].forEach(([x,y])=>{c.beginPath();c.arc(x,y,2.5,0,7);c.fill()});
+  c.fillStyle='#0b1226';[[1255,580,50,60],[1305,555,40,85],[1345,590,60,50],[1405,565,45,75],[1450,600,50,40],[1500,575,50,65]].forEach(a=>c.fillRect(...a));
+  c.fillStyle='#ffd44d';[[1318,570],[1320,600],[1418,580],[1515,590]].forEach(([x,y])=>c.fillRect(x,y,8,8));
+  c.strokeStyle='#6b4a35';c.lineWidth=12;c.strokeRect(1255,420,295,220);c.lineWidth=6;c.beginPath();c.moveTo(1402,420);c.lineTo(1402,640);c.stroke();
+  // 네온 간판
+  rr(c,470,70,660,230,30);c.fillStyle='#1b1238';c.fill();
+  c.shadowColor='#ff4f8b';c.shadowBlur=30;c.strokeStyle='#ff7fa3';c.lineWidth=6;c.stroke();
+  c.textAlign='center';c.font='110px Jua';c.fillStyle='#ffb3cd';c.shadowBlur=40;c.fillText('마음 라디오',800,200);
+  c.font='52px Jua';c.shadowColor='#ffb800';c.fillStyle='#ffd44d';c.fillText('FM 2.6 MHz',800,270);c.shadowBlur=0;
+  // ON AIR 램프
+  rr(c,1290,50,230,76,14);c.fillStyle=live?'#ff3b5c':'#4a2530';if(live){c.shadowColor='#ff3b5c';c.shadowBlur=45}c.fill();c.shadowBlur=0;
+  c.font='52px Jua';c.fillStyle=live?'#fff':'#7a4a55';c.fillText('ON AIR',1405,108);
+  // 조명
+  g=c.createRadialGradient(800,460,50,800,460,650);g.addColorStop(0,'rgba(255,215,160,.16)');g.addColorStop(1,'rgba(255,215,160,0)');c.fillStyle=g;c.fillRect(0,0,1600,900);
+  return cv;
+}
+function drawDesk(W,H){
+  const cv=mk(W,H),c=cv.getContext('2d');c.scale(W/1600,H/900);c.translate(0,-80);
+  // 마이크 스탠드
+  c.lineCap='round';c.strokeStyle='#1c1c24';c.lineWidth=16;c.beginPath();c.moveTo(1600,250);c.lineTo(1400,420);c.lineTo(1170,560);c.stroke();
+  c.strokeStyle='#4a4a5a';c.lineWidth=4;c.stroke();
+  c.save();c.translate(1130,600);c.rotate(-.55);
+  let g=c.createLinearGradient(-40,0,40,0);g.addColorStop(0,'#555');g.addColorStop(.5,'#ddd');g.addColorStop(1,'#444');
+  rr(c,-40,-100,80,175,40);c.fillStyle=g;c.fill();
+  c.strokeStyle='rgba(0,0,0,.35)';c.lineWidth=2;for(let y=-80;y<10;y+=12){c.beginPath();c.moveTo(-34,y);c.lineTo(34,y);c.stroke()}
+  rr(c,-44,18,88,18,6);c.fillStyle='#ff3b5c';c.fill();c.restore();
+  // 책상
+  g=c.createLinearGradient(0,740,0,900);g.addColorStop(0,'#6b4a35');g.addColorStop(1,'#2e1f16');c.fillStyle=g;c.fillRect(0,745,1600,240);
+  c.fillStyle='#8a6247';c.fillRect(0,730,1600,18);
+  // 조정 콘솔
+  rr(c,440,680,720,64,14);c.fillStyle='#23233a';c.fill();c.strokeStyle='#3a3a5a';c.lineWidth=3;c.stroke();
+  for(let i=0;i<10;i++){const x=482+i*42;c.fillStyle='#000';c.fillRect(x,692,6,42);c.fillStyle=COLS[i%5];rr(c,x-9,696+(i*37)%24,24,12,3);c.fill()}
+  for(let i=0;i<10;i++){c.fillStyle=COLS[(i+1)%5];c.beginPath();c.arc(930+(i%5)*44,700+Math.floor(i/5)*26,9,0,7);c.fill()}
+  // 헤드폰
+  c.strokeStyle='#1c1c24';c.lineWidth=16;c.beginPath();c.arc(1400,722,62,Math.PI,0);c.stroke();
+  c.fillStyle='#ff7fa3';rr(c,1320,690,40,50,12);c.fill();rr(c,1440,690,40,50,12);c.fill();
+  return cv;
+}
+let BG,BGL,FG;
+document.fonts.load('110px Jua','마음 라디오 FM 2.6 MHz ON AIR').catch(()=>{}).then(()=>{
+  BG=drawStudio(OW,OH,false);BGL=drawStudio(OW,OH,true);FG=drawDesk(OW,OH);
+  const p3=document.getElementById('p3');
+  p3.style.backgroundImage=`linear-gradient(rgba(12,8,28,.82),rgba(12,8,28,.93)),url(${drawStudio(1600,900,false).toDataURL('image/jpeg',.85)})`;
+});
+
+/* ---------- 가상 배경 (사람만 오려서 스튜디오에 합성) ---------- */
+const MP='https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+let seg=null,virtual=false,showDesk=true,vgen=0;
+async function loadSeg(){
+  const V=await import(MP+'/vision_bundle.mjs');
+  const fs=await V.FilesetResolver.forVisionTasks(MP+'/wasm');
+  const opt=d=>({baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite',delegate:d},runningMode:'VIDEO',outputConfidenceMasks:true,outputCategoryMask:false});
+  try{seg=await V.ImageSegmenter.createFromOptions(fs,opt('GPU'))}catch(e){seg=await V.ImageSegmenter.createFromOptions(fs,opt('CPU'))}
+}
+const vcanvas=document.getElementById('vcanvas'),ox=vcanvas.getContext('2d');
+const fc=mk(OW,OH),fcx=fc.getContext('2d'),SW=256,SH=144,sc=mk(SW,SH),scx=sc.getContext('2d');
+const pc=mk(OW,OH),pcx=pc.getContext('2d');let mc=mk(SW,SH),mcx=mc.getContext('2d'),mimg=null;
+function newMask(w,h){mc.width=w;mc.height=h;mimg=mcx.createImageData(w,h);mimg.data.fill(255)}
+function drawContain(c,v,W,H){const vw=v.videoWidth,vh=v.videoHeight;if(!vw)return;const s=Math.min(W/vw,H/vh),w=vw*s,h=vh*s;
+  c.save();c.translate(W/2,H/2);if(rot)c.rotate(Math.PI);if(mirror)c.scale(-1,1);c.drawImage(v,-w/2,-h/2,w,h);c.restore()}
+function renderVirtual(){
+  if(video.readyState<2||!BG)return;
+  fcx.clearRect(0,0,OW,OH);drawContain(fcx,video,OW,OH);
+  scx.clearRect(0,0,SW,SH);scx.drawImage(fc,0,0,SW,SH);
+  seg.segmentForVideo(sc,performance.now(),r=>{
+    const mk_=r.confidenceMasks[r.confidenceMasks.length-1],w=mk_.width,h=mk_.height,m=mk_.getAsFloat32Array();
+    if(!mimg||mc.width!==w||mc.height!==h)newMask(w,h);
+    const d=mimg.data;
+    for(let i=0;i<m.length;i++){let v=m[i];v=(v-.35)/.3;d[i*4+3]=(v<0?0:v>1?1:v)*255}
+    mcx.putImageData(mimg,0,0);
+  });
+  pcx.globalCompositeOperation='copy';pcx.filter='blur(4px)';pcx.drawImage(mc,0,0,OW,OH);pcx.filter='none';
+  pcx.globalCompositeOperation='source-in';pcx.drawImage(fc,0,0);pcx.globalCompositeOperation='source-over';
+  ox.drawImage(live?BGL:BG,0,0);ox.drawImage(pc,0,0);if(showDesk)ox.drawImage(FG,0,0);
+}
+const vBtn=document.getElementById('vBtn');
+function setVirtual(on){
+  virtual=on;vcanvas.style.display=on?'block':'none';
+  vBtn.textContent=on?'🏙️ 가상 스튜디오 끄기':'🏙️ 가상 스튜디오 켜기';vBtn.classList.toggle('on',on);
+  if(on){const g=++vgen;const loop=()=>{if(g!==vgen||!virtual)return;try{renderVirtual()}catch(e){console.error(e)}video.requestVideoFrameCallback(loop)};video.requestVideoFrameCallback(loop)}
+  else vgen++;
+}
+vBtn.onclick=async()=>{
+  if(virtual){setVirtual(false);return}
+  if(!stream){alert('먼저 [📷 카메라 켜기]를 눌러 주세요.');return}
+  if(!seg){vBtn.textContent='⏳ 스튜디오 준비 중…';try{await loadSeg()}catch(e){console.error(e);alert('가상 스튜디오를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.');vBtn.textContent='🏙️ 가상 스튜디오 켜기';return}}
+  setVirtual(true);
+};
+document.getElementById('deskBtn').onclick=function(){showDesk=!showDesk;this.classList.toggle('on',showDesk);this.textContent=showDesk?'🎙️ 책상·마이크 보이기':'🎙️ 책상·마이크 숨김'};
+</script>
+</body>
